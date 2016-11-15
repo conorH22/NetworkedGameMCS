@@ -1,6 +1,7 @@
 /* Update server with fork for hangman game*/
 /* name :conor Holmes*/
 /* Date:08/10/2016*/
+/* now with signal handling*/
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -12,26 +13,34 @@
 #include <errno.h>
 #include <netdb.h>
 #include <string.h>
+#include <signal.h>
 
 extern time_t time ();
-
+typedef void Sigfunc(int);
+//function prototypes
+Sigfunc * signal_setup(int sigo, Sigfunc * func); //set up POSIX sigalhandling
+void sig_chld(int signo); //signal handler for SIGCHLD
+//int setupTCPServerSocket(const char *);
+//static const int MAXPENDING = 5; // MAXIMUM outstanding /*connection requests */
  int maxlives = 12;
  char *word [] = {
  #include "words"
  };
 
-# define NUM_OF_WORDS (sizeof (word) / sizeof (word [0]))
-# define MAXLEN 80 /* Maximum size in the world of Any string */
-# define HANGMAN_TCP_PORT 1066
+#define NUM_OF_WORDS (sizeof (word) / sizeof (word [0]))
+#define MAXLEN 80 /* Maximum size in the world of Any string */
+#define HANGMAN_TCP_PORT 1066
 
 
 
- main( int argc, char *argv[] ) {
+ int main( int argc, char *argv[] ) {
    int sockfd, newsockfd, portno, clilen;
+   int n; 
+   pid_t pid;
    char buffer[256];
    struct sockaddr_in serv_addr, cli_addr;
    srand ((int) time ((long *) 0)); /* randomize the seed */
-   int n, pid;
+   
    
    /* First call to socket() function */
    sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -61,6 +70,7 @@ extern time_t time ();
    */
    
    listen(sockfd,5);
+    signal_setup(SIGCHLD, sig_chld);
    clilen = sizeof(cli_addr);
    
    while (1) {
@@ -93,6 +103,35 @@ extern time_t time ();
    } /* end of while */
 }
 
+//Functions Defintions
+Sigfunc * signal_setup(int signo, Sigfunc *func){
+struct sigaction act, oact;
+	act.sa_handler = func;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	if(signo == SIGALRM) {
+#ifdef	SA_INTERRUPT
+		act.sa_flags |= SA_INTERRUPT; /* SunOS 4.x */
+#endif 
+	}else{
+#ifdef SA_RESTART
+		act.sa_flags |= SA_RESTART;  /* SVR4, 44BSD */
+#endif
+	}	
+	if (sigaction(signo, &act, &oact) < 0)
+		return(SIG_ERR);
+	return(oact.sa_handler); 
+}
+void 
+sig_chld(int signo)
+{
+	pid_t pid;
+	int stat;
+
+	while ( (pid = waitpid(-1, & stat, WNOHANG)) > 0)
+		printf("child %d terninated\n", pid);
+	return;
+}
 play_hangman(int in, int out)
 {
 	char * all_word, part_word [MAXLEN],

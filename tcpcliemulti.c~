@@ -23,14 +23,7 @@ int main(int argc, char *argv[]) {
    
    char buffer[256];
   
-   /*
-   if (argc < 3) {
-      fprintf(stderr,"usage %s hostname port\n", argv[0]);
-      exit(0);
-   }
-   */	  
-   /*portno = atoi(argv[2]);*/
-	srver_nme = (argc = 1)?  argv [1]: "localhost";
+    srver_nme = (argc = 1)?  argv [1]: "localhost";
    
    /* Create a socket point */
    sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -57,9 +50,9 @@ int main(int argc, char *argv[]) {
       perror("ERROR connecting");
       exit(3);
    }
-     /*OK connected to the host_info.  
- Take a line from the host_info and show it, take a line and send the user input to the host_info. 
- Repeat until the host_info terminates the connection. */
+     /*OK connected to the server.  
+ Take a line from the host_info and show it, take a line and send the user input to the server. 
+ Repeat until the server terminates the connection. */
 
  	printf ("Connected to host_info %s \n", srver_nme);
  	while ((count = read (sockfd, i_line, LINESIZE)) > 0) {
@@ -68,31 +61,4 @@ int main(int argc, char *argv[]) {
  		write (sockfd, o_line, count);
  	} 
 
-   /* Now ask for a message from the user, this message
-      * will be read by host_info
-   */
-   	
-   /*printf("Please enter the message: ");
-   bzero(buffer,256);
-   fgets(buffer,255,stdin);*/
-   
-   /* Send message to the host_info */
-  /* n = write(sockfd, buffer, strlen(buffer));
-   
-   if (n < 0) {
-      perror("ERROR writing to socket");
-      exit(1);
-   } */
-   
-   /* Now read host_info response */
-  /* bzero(buffer,256);
-   n = read(sockfd, buffer, 255);
-   
-   if (n < 0) {
-      perror("ERROR reading from socket");
-      exit(1);
-   }
-	
-   printf("%s\n",buffer);
-   return 0; */
 }

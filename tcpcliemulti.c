@@ -23,14 +23,7 @@ int main(int argc, char *argv[]) {
    
    char buffer[256];
   
-   /*
-   if (argc < 3) {
-      fprintf(stderr,"usage %s hostname port\n", argv[0]);
-      exit(0);
-   }
-   */	  
-   /*portno = atoi(argv[2]);*/
-	srver_nme = (argc = 1)?  argv [1]: "localhost";
+    srver_nme = (argc = 1)?  argv [1]: "localhost";
    
    /* Create a socket point */
    sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -46,7 +39,8 @@ int main(int argc, char *argv[]) {
       fprintf(stderr," %s ERROR,no such host %s \n", argv [0], srver_nme);
       exit(2);
    }
-   
+   /* Set up the server's socket address, then connect */
+   /* Bzero is used instead memset.Bcopy: copies byte sequence*/		
    bzero((char *) &serv_addr, sizeof(serv_addr));
    serv_addr.sin_family = host_info-> h_addrtype;
    bcopy((char *)host_info->h_addr, (char *)&serv_addr.sin_addr.s_addr, host_info->h_length);
@@ -68,31 +62,4 @@ int main(int argc, char *argv[]) {
  		write (sockfd, o_line, count);
  	} 
 
-   /* Now ask for a message from the user, this message
-      * will be read by host_info
-   */
-   	
-   /*printf("Please enter the message: ");
-   bzero(buffer,256);
-   fgets(buffer,255,stdin);*/
-   
-   /* Send message to the host_info */
-  /* n = write(sockfd, buffer, strlen(buffer));
-   
-   if (n < 0) {
-      perror("ERROR writing to socket");
-      exit(1);
-   } */
-   
-   /* Now read host_info response */
-  /* bzero(buffer,256);
-   n = read(sockfd, buffer, 255);
-   
-   if (n < 0) {
-      perror("ERROR reading from socket");
-      exit(1);
-   }
-	
-   printf("%s\n",buffer);
-   return 0; */
 }

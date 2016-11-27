@@ -1,7 +1,7 @@
-/* Update server with fork for hangman game*/
-/* name :conor Holmes*/
-/* Date:08/10/2016*/
-/* now with signal handling*/
+/* server with forking for hangman game*/
+/* with signal handling and DieWithMessage*/
+/*student name :Conor Holmes*/
+/*student Number:k00177426*/
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -13,15 +13,17 @@
 #include <errno.h>
 #include <netdb.h>
 #include <string.h>
-#include <signal.h>
+#include "Practical.h"
 
 extern time_t time ();
+
 typedef void Sigfunc(int);
-//function prototypes
-Sigfunc * signal_setup(int sigo, Sigfunc * func); //set up POSIX sigalhandling
+/*function prototypes*/
+Sigfunc * signal_setup(int sigo, Sigfunc * func); /*set up POSIX sigalhandling*/
 void sig_chld(int signo); //signal handler for SIGCHLD
-//int setupTCPServerSocket(const char *);
-//static const int MAXPENDING = 5; // MAXIMUM outstanding /*connection requests */
+
+/*int setupTCPServerSocket(const char *);*/
+/*static const int MAXPENDING = 5; // MAXIMUM outstanding /*connection requests */
  int maxlives = 12;
  char *word [] = {
  #include "words"
@@ -30,24 +32,35 @@ void sig_chld(int signo); //signal handler for SIGCHLD
 #define NUM_OF_WORDS (sizeof (word) / sizeof (word [0]))
 #define MAXLEN 80 /* Maximum size in the world of Any string */
 #define HANGMAN_TCP_PORT 1066
-
-
-
- int main( int argc, char *argv[] ) {
-   int sockfd, newsockfd, portno, clilen;
-   int n; 
-   pid_t pid;
-   char buffer[256];
-   struct sockaddr_in serv_addr, cli_addr;
-   srand ((int) time ((long *) 0)); /* randomize the seed */
+/* Get sockaddr, Ipv4 or IPv6*/
+/*void * get_in_addr(struct sockaddr *sa)
+{
+	if(sa->sa_family ==AF_INET){
+		return &(((struct sockaddr_in*)sa)->sin_addr);
+	}
+	
+	return &(((struct sockaddr_in6*)sa)->sin6_addr);
+}
+*/
+int main( int argc, char *argv[] ) {
+	int sockfd, newsockfd, portno, clilen;
+	int n; 
+	pid_t pid; 	
+	char buffer[256];
+	struct sockaddr_in serv_addr,cli_addr;
+	/*struct sockaddr_storage ;*/
+	/*socklen_t sin_size;*/
+	/*char s[INET6_ADDRSTRLEN];*/
+    	
+	srand ((int) time ((long *) 0)); /* randomize the seed */
    
    
-   /* First call to socket() function */
+   /* socket() function is called */
    sockfd = socket(AF_INET, SOCK_STREAM, 0);
    
    if (sockfd < 0) {
-      perror("ERROR opening socket");
-      exit(1);
+		DieWithSystemMessage("socket() failed");      
+		
    }
    
    /* Initialize socket structure */
@@ -60,8 +73,7 @@ void sig_chld(int signo); //signal handler for SIGCHLD
    
    /* Now bind the host address using bind() call.*/
    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-      perror("ERROR on binding");
-      exit(2);
+		DieWithSystemMessage("bind() failed");
    }
    
    /* Now start listening for the clients, here
@@ -70,40 +82,44 @@ void sig_chld(int signo); //signal handler for SIGCHLD
    */
    
    listen(sockfd,5);
-    signal_setup(SIGCHLD, sig_chld);
+   signal_setup(SIGCHLD, sig_chld);
    clilen = sizeof(cli_addr);
-   
+  // printf("Server waiting for connections...");
    while (1) {
-      newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+   		newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 		
       if (newsockfd < 0) {
-         perror("ERROR on accept");
-         exit(1);
+	  	DieWithSystemMessage("Accept() failed");
       }
+	/*inet_ntop(cli_addr,
+	get_in_addr((struct sockaddr *)&cli_addr),
+	s, sizeof s);
+	printf("Server:Got connection from %s<n",s); */
       
       /* Create child process */
       pid = fork();
 		
       if (pid < 0) {
-         perror("ERROR on fork");
-         exit(1);
+      		DieWithSystemMessage("Fork() Error");
       }
       
       if (pid == 0) {
-         /* This is the client process */
+         /* The client process with srand functio to randomize the list of words for the word file */
+		 srand ((int) time ((long *) 0));
          close(sockfd);
-	 play_hangman(newsockfd, newsockfd);
+	 	play_hangman(newsockfd, newsockfd);
          exit(3);
+		//close(play_hangman);
       }
       else {
 	 
          close(newsockfd);
       }
 		
-   } /* end of while */
+   } 
 }
 
-//Functions Defintions
+// sigfunc Functions Defintions
 Sigfunc * signal_setup(int signo, Sigfunc *func){
 struct sigaction act, oact;
 	act.sa_handler = func;
@@ -122,15 +138,20 @@ struct sigaction act, oact;
 		return(SIG_ERR);
 	return(oact.sa_handler); 
 }
-void 
-sig_chld(int signo)
+/*sig chld calls waitpid for all term children
+1st arg specifies the processs id to wait for -1 which waits for the 1st child to terminate
+2nd arg terminates status
+3rd arg options uses WNOHANG  checks if any zombie-children exists if o prints statement*/
+
+void sig_chld(int signo)
 {
 	pid_t pid;
 	int stat;
-
+	
 	while ( (pid = waitpid(-1, & stat, WNOHANG)) > 0)
-		printf("child %d terninated\n", pid);
-	return;
+		printf("child %d terminated\n", pid);
+		//close(pid);
+		return;
 }
 play_hangman(int in, int out)
 {
@@ -181,6 +202,7 @@ play_hangman(int in, int out)
  	else if (lives == 0) {
  		game_state = 'L'; /* L ==> User Lost */
  		strcpy (part_word, all_word); /* User Show the word */
+		
  	}
  	sprintf (outbuf, "%s %d \n", part_word, lives);
  	write (out, outbuf, strlen (outbuf));
